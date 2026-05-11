@@ -4,12 +4,17 @@
  *
  */
 import axios from "axios";
-import { AUTHORIZATION } from "./constants.mjs";
 
 const exsysBaseDB = process.env.EXSYS_BASE_DB;
 
 if (!exsysBaseDB) {
   throw new Error("Missing required env variable: EXSYS_BASE_DB");
+}
+
+const AUTHORIZATION = process.env.AUTHORIZATION;
+
+if (!AUTHORIZATION) {
+  throw new Error("Missing required env variable: AUTHORIZATION");
 }
 
 const EXSYS_BASE_URL = `${exsysBaseDB}/ex_nahdi_integration`;

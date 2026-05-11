@@ -10,7 +10,12 @@ import {
 } from "./exsysApiClient.mjs";
 import { getSalesInvoices } from "./nahdiApiClient.mjs";
 import logResult from "./logResult.mjs";
-import { SALES_INVOICES_POLL_INTERVAL_MS } from "./constants.mjs";
+
+const SALES_INVOICES_POLL_INTERVAL_MIN = +(
+  process.env.SALES_INVOICES_POLL_INTERVAL_MIN || 12
+);
+const SALES_INVOICES_POLL_INTERVAL_MS =
+  SALES_INVOICES_POLL_INTERVAL_MIN * 60 * 1000;
 
 const LOG_IN_RESULT = false;
 

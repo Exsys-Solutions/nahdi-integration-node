@@ -11,7 +11,12 @@ import {
 } from "./exsysApiClient.mjs";
 import { sendPrescription } from "./nahdiApiClient.mjs";
 import logResult from "./logResult.mjs";
-import { PRESCRIPTION_POLL_INTERVAL_MS } from "./constants.mjs";
+
+const PRESCRIPTION_POLL_INTERVAL_MIN = +(
+  process.env.PRESCRIPTION_POLL_INTERVAL_MIN || 5
+);
+const PRESCRIPTION_POLL_INTERVAL_MS =
+  PRESCRIPTION_POLL_INTERVAL_MIN * 60 * 1000;
 
 const LOG_IN_RESULT = false;
 

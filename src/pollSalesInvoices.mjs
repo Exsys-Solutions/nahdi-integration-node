@@ -27,153 +27,158 @@ async function pollSalesInvoices() {
     invoices: [],
   };
 
-  let invoices = [];
-
   try {
-    invoices = await getSalesInvoicesNotArrived();
-  } catch (err) {
-    createConsoleMessage(
-      "error",
-      `Failed to fetch sales invoices list — ${err.message}`,
-    );
+    let invoices = [];
 
-    if (LOG_IN_RESULT) {
-      pollLog.error = err.message;
-      await logResult("sales_invoices", pollLog);
-    }
-    return;
-  }
-
-  if (!invoices.length) {
-    createConsoleMessage("info", "No pending sales invoices found.");
-    return;
-  }
-
-  createConsoleMessage(
-    "info",
-    `Found ${invoices.length} invoice(s) to process.`,
-  );
-
-  for (const invoiceEntry of invoices) {
-    if (!invoiceEntry || typeof invoiceEntry !== "object") {
+    try {
+      invoices = await getSalesInvoicesNotArrived();
+    } catch (err) {
       createConsoleMessage(
-        "warning",
-        `Skipping malformed invoice entry: ${JSON.stringify(invoiceEntry)}`,
+        "error",
+        `Failed to fetch sales invoices list — ${err.message}`,
       );
-      continue;
+      pollLog.error = err.message;
+      return;
     }
 
-    const {
-      organization_no,
-      visit_id,
-      PrescriptionID,
-      provider_id,
-      provider_token,
-    } = invoiceEntry;
+    if (!invoices.length) {
+      createConsoleMessage("info", "No pending sales invoices found.");
+      return;
+    }
 
     createConsoleMessage(
       "info",
-      `Fetching Nahdi invoice for PrescriptionID: ${PrescriptionID} | org: ${organization_no}`,
+      `Found ${invoices.length} invoice(s) to process.`,
     );
 
-    const invoiceLog = {
-      organization_no,
-      visit_id,
-      PrescriptionID,
-      nahdiResult: null,
-      exsysSaveData: null,
-      exsysSaveResult: null,
-    };
-
-    let nahdiInvoiceData = null;
-    let nahdiError = undefined;
-
-    try {
-      nahdiInvoiceData = await getSalesInvoices({
-        provider_id,
-        provider_token,
-        PrescriptionID,
-      });
-    } catch (err) {
-      createConsoleMessage(
-        "error",
-        `Failed to get Nahdi invoice for PrescriptionID: ${PrescriptionID} — ${err.message}`,
-      );
-      nahdiError = err.message;
-    }
-
-    if (nahdiInvoiceData) {
-      invoiceLog.nahdiResult = nahdiInvoiceData;
-
-      if (nahdiInvoiceData.error) {
+    for (const invoiceEntry of invoices) {
+      if (!invoiceEntry || typeof invoiceEntry !== "object") {
         createConsoleMessage(
           "warning",
-          `Nahdi returned an error for PrescriptionID: ${PrescriptionID} — ${nahdiInvoiceData.error}`,
+          `Skipping malformed invoice entry: ${JSON.stringify(invoiceEntry)}`,
         );
-        nahdiError = nahdiInvoiceData.error;
-      } else if (!nahdiInvoiceData.Invoices?.length) {
-        createConsoleMessage(
-          "warning",
-          `No invoices returned from Nahdi for PrescriptionID: ${PrescriptionID}`,
-        );
-        nahdiError = "Empty Invoices array returned from Nahdi.";
-      } else {
-        createConsoleMessage(
-          "success",
-          `Invoice fetched for PrescriptionID: ${PrescriptionID}`,
-        );
+        continue;
       }
-    }
 
-    invoiceLog.nahdiError = nahdiError;
-
-    try {
-      const dataSentToExsys = {
+      const {
         organization_no,
         visit_id,
         PrescriptionID,
-        ...(nahdiInvoiceData || {}),
-        nahdiError,
+        provider_id,
+        provider_token,
+      } = invoiceEntry;
+
+      createConsoleMessage(
+        "info",
+        `Fetching Nahdi invoice for PrescriptionID: ${PrescriptionID} | org: ${organization_no}`,
+      );
+
+      const invoiceLog = {
+        organization_no,
+        visit_id,
+        PrescriptionID,
+        nahdiResult: null,
+        exsysSaveData: null,
+        exsysSaveResult: null,
       };
 
-      invoiceLog.exsysSaveData = dataSentToExsys;
+      let nahdiInvoiceData = null;
+      let nahdiError = undefined;
 
-      createConsoleMessage("info", `Sending data to Exsys`);
-
-      const exsysSaveResponse =
-        await postSalesInvoiceDataToExsys(dataSentToExsys);
-
-      invoiceLog.exsysSaveResult = exsysSaveResponse;
-
-      createConsoleMessage(
-        "success",
-        `Invoice data saved to Exsys for PrescriptionID: ${PrescriptionID}`,
-      );
-    } catch (err) {
-      const exsysErrorBody = err.response?.data;
-
-      createConsoleMessage(
-        "error",
-        `Failed to save invoice to Exsys for PrescriptionID: ${PrescriptionID} — ${err.message}`,
-      );
-
-      if (exsysErrorBody) {
+      try {
+        nahdiInvoiceData = await getSalesInvoices({
+          provider_id,
+          provider_token,
+          PrescriptionID,
+        });
+      } catch (err) {
         createConsoleMessage(
           "error",
-          `Exsys error body: ${JSON.stringify(exsysErrorBody)}`,
+          `Failed to get Nahdi invoice for PrescriptionID: ${PrescriptionID} — ${err.message}`,
         );
+        nahdiError = err.message;
       }
 
-      invoiceLog.exsysSaveError = err.message;
-      invoiceLog.exsysErrorResponse = exsysErrorBody ?? null;
+      if (nahdiInvoiceData) {
+        invoiceLog.nahdiResult = nahdiInvoiceData;
+
+        if (nahdiInvoiceData.error) {
+          createConsoleMessage(
+            "warning",
+            `Nahdi returned an error for PrescriptionID: ${PrescriptionID} — ${nahdiInvoiceData.error}`,
+          );
+          nahdiError = nahdiInvoiceData.error;
+        } else if (!nahdiInvoiceData.Invoices?.length) {
+          createConsoleMessage(
+            "warning",
+            `No invoices returned from Nahdi for PrescriptionID: ${PrescriptionID}`,
+          );
+          nahdiError = "Empty Invoices array returned from Nahdi.";
+        } else {
+          createConsoleMessage(
+            "success",
+            `Invoice fetched for PrescriptionID: ${PrescriptionID}`,
+          );
+        }
+      }
+
+      invoiceLog.nahdiError = nahdiError;
+
+      try {
+        const dataSentToExsys = {
+          organization_no,
+          visit_id,
+          PrescriptionID,
+          ...(nahdiInvoiceData || {}),
+          nahdiError,
+        };
+
+        invoiceLog.exsysSaveData = dataSentToExsys;
+
+        createConsoleMessage("info", `Sending data to Exsys`);
+
+        const exsysSaveResponse =
+          await postSalesInvoiceDataToExsys(dataSentToExsys);
+
+        invoiceLog.exsysSaveResult = exsysSaveResponse;
+
+        createConsoleMessage(
+          "success",
+          `Invoice data saved to Exsys for PrescriptionID: ${PrescriptionID}`,
+        );
+      } catch (err) {
+        const exsysErrorBody = err.response?.data;
+
+        createConsoleMessage(
+          "error",
+          `Failed to save invoice to Exsys for PrescriptionID: ${PrescriptionID} — ${err.message}`,
+        );
+
+        if (exsysErrorBody) {
+          createConsoleMessage(
+            "error",
+            `Exsys error body: ${JSON.stringify(exsysErrorBody)}`,
+          );
+        }
+
+        invoiceLog.exsysSaveError = err.message;
+        invoiceLog.exsysErrorResponse = exsysErrorBody ?? null;
+      }
+
+      pollLog.invoices.push(invoiceLog);
     }
-
-    pollLog.invoices.push(invoiceLog);
-  }
-
-  if (LOG_IN_RESULT) {
-    pollLog.finishedAt = new Date().toISOString();
-    await logResult("sales_invoices", pollLog);
+  } catch (err) {
+    createConsoleMessage(
+      "error",
+      `Unexpected error while polling sales invoices — ${err.message}`,
+    );
+    pollLog.unexpectedError = err.message;
+    throw err;
+  } finally {
+    if (LOG_IN_RESULT) {
+      pollLog.finishedAt = new Date().toISOString();
+      await logResult("sales_invoices", pollLog);
+    }
   }
 }
 

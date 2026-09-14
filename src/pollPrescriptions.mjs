@@ -19,7 +19,6 @@ const PRESCRIPTION_POLL_INTERVAL_MS =
   PRESCRIPTION_POLL_INTERVAL_MIN * 60 * 1000;
 
 const LOG_IN_RESULT = process.env.LOG_RESULT === "Y";
-console.log("LOG_IN_RESULT", LOG_IN_RESULT);
 
 async function pollPrescriptions() {
   createConsoleMessage("info", "Polling for prescriptions...");
@@ -29,157 +28,164 @@ async function pollPrescriptions() {
     prescriptions: [],
   };
 
-  let prescriptions = [];
-
   try {
-    prescriptions = await getPrescriptionsNotSent();
-  } catch (err) {
-    createConsoleMessage(
-      "error",
-      `Failed to fetch prescriptions list — ${err.message}`,
-    );
+    let prescriptions = [];
 
-    if (LOG_IN_RESULT) {
-      pollLog.error = err.message;
-      await logResult("prescriptions", pollLog);
-    }
-    return;
-  }
-
-  if (!prescriptions.length) {
-    createConsoleMessage("info", "No pending prescriptions found.");
-    return;
-  }
-
-  createConsoleMessage(
-    "info",
-    `Found ${prescriptions.length} prescription(s) to process.`,
-  );
-
-  for (const prescription of prescriptions) {
-    if (!prescription || typeof prescription !== "object") {
+    try {
+      prescriptions = await getPrescriptionsNotSent();
+    } catch (err) {
       createConsoleMessage(
-        "warning",
-        `Skipping malformed prescription entry: ${JSON.stringify(prescription)}`,
+        "error",
+        `Failed to fetch prescriptions list — ${err.message}`,
       );
-      continue;
+      pollLog.error = err.message;
+      return;
     }
 
-    const { organization_no, visit_id } = prescription;
+    if (!prescriptions.length) {
+      createConsoleMessage("info", "No pending prescriptions found.");
+      return;
+    }
 
     createConsoleMessage(
       "info",
-      `Fetching prescription data for visit_id: ${visit_id} | org: ${organization_no}`,
+      `Found ${prescriptions.length} prescription(s) to process.`,
     );
 
-    const prescriptionLog = {
-      organization_no,
-      visit_id,
-      prescriptionData: null,
-      nahdiResult: null,
-      exsysSaveData: null,
-      exsysSaveResult: null,
-    };
-
-    let prescriptionData = null;
-
-    try {
-      prescriptionData = await getPrescriptionData(organization_no, visit_id);
-    } catch (err) {
-      createConsoleMessage(
-        "error",
-        `Failed to get prescription data for visit_id: ${visit_id} — ${err.message}`,
-      );
-      prescriptionLog.exsysPrescriptionDataError = err.message;
-      pollLog.prescriptions.push(prescriptionLog);
-      continue;
-    }
-
-    prescriptionLog.prescriptionData = prescriptionData || null;
-
-    if (!prescriptionData) {
-      createConsoleMessage(
-        "warning",
-        `No data returned for visit_id: ${visit_id}, skipping.`,
-      );
-      prescriptionLog.exsysPrescriptionDataError =
-        "No prescription data returned.";
-      pollLog.prescriptions.push(prescriptionLog);
-      continue;
-    }
-
-    let nahdiResult = null;
-    let nahdiError = undefined;
-
-    try {
-      nahdiResult = await sendPrescription(prescriptionData);
-      createConsoleMessage(
-        "success",
-        `Prescription sent for visit_id: ${visit_id}`,
-      );
-
-      prescriptionLog.nahdiResult = nahdiResult;
-
-      if (!nahdiResult?.OrderNumber) {
-        nahdiError = "No OrderNumber returned from Nahdi.";
+    for (const prescription of prescriptions) {
+      if (!prescription || typeof prescription !== "object") {
         createConsoleMessage(
           "warning",
-          `visit_id: ${visit_id} — ${nahdiError}`,
+          `Skipping malformed prescription entry: ${JSON.stringify(prescription)}`,
         );
+        continue;
       }
-    } catch (err) {
-      createConsoleMessage(
-        "error",
-        `Failed to send prescription for visit_id: ${visit_id} — ${err.message}`,
-      );
-      nahdiError = err.message;
-    }
 
-    try {
-      const dataSentToExsys = {
+      const { organization_no, visit_id } = prescription;
+
+      createConsoleMessage(
+        "info",
+        `Fetching prescription data for visit_id: ${visit_id} | org: ${organization_no}`,
+      );
+
+      const prescriptionLog = {
         organization_no,
         visit_id,
-        ...(nahdiResult || {}),
-        nahdiError,
+        prescriptionData: null,
+        nahdiResult: null,
+        exsysSaveData: null,
+        exsysSaveResult: null,
       };
 
-      prescriptionLog.exsysSaveData = dataSentToExsys;
+      let prescriptionData = null;
 
-      const exsysSaveResponse =
-        await postPrescriptionDataToExsys(dataSentToExsys);
-
-      prescriptionLog.exsysSaveResult = exsysSaveResponse;
-
-      createConsoleMessage(
-        "success",
-        `Prescription data saved to Exsys for visit_id: ${visit_id}`,
-      );
-    } catch (err) {
-      const exsysErrorBody = err.response?.data;
-
-      createConsoleMessage(
-        "error",
-        `Failed to save prescription to Exsys for visit_id: ${visit_id} — ${err.message}`,
-      );
-
-      if (exsysErrorBody) {
+      try {
+        prescriptionData = await getPrescriptionData(
+          organization_no,
+          visit_id,
+        );
+      } catch (err) {
         createConsoleMessage(
           "error",
-          `Exsys error body: ${JSON.stringify(exsysErrorBody)}`,
+          `Failed to get prescription data for visit_id: ${visit_id} — ${err.message}`,
         );
+        prescriptionLog.exsysPrescriptionDataError = err.message;
+        pollLog.prescriptions.push(prescriptionLog);
+        continue;
       }
 
-      prescriptionLog.exsysSaveError = err.message;
-      prescriptionLog.exsysErrorResponse = exsysErrorBody ?? null;
+      prescriptionLog.prescriptionData = prescriptionData || null;
+
+      if (!prescriptionData) {
+        createConsoleMessage(
+          "warning",
+          `No data returned for visit_id: ${visit_id}, skipping.`,
+        );
+        prescriptionLog.exsysPrescriptionDataError =
+          "No prescription data returned.";
+        pollLog.prescriptions.push(prescriptionLog);
+        continue;
+      }
+
+      let nahdiResult = null;
+      let nahdiError = undefined;
+
+      try {
+        nahdiResult = await sendPrescription(prescriptionData);
+        createConsoleMessage(
+          "success",
+          `Prescription sent for visit_id: ${visit_id}`,
+        );
+
+        prescriptionLog.nahdiResult = nahdiResult;
+
+        if (!nahdiResult?.OrderNumber) {
+          nahdiError = "No OrderNumber returned from Nahdi.";
+          createConsoleMessage(
+            "warning",
+            `visit_id: ${visit_id} — ${nahdiError}`,
+          );
+        }
+      } catch (err) {
+        createConsoleMessage(
+          "error",
+          `Failed to send prescription for visit_id: ${visit_id} — ${err.message}`,
+        );
+        nahdiError = err.message;
+      }
+
+      try {
+        const dataSentToExsys = {
+          organization_no,
+          visit_id,
+          ...(nahdiResult || {}),
+          nahdiError,
+        };
+
+        prescriptionLog.exsysSaveData = dataSentToExsys;
+
+        const exsysSaveResponse =
+          await postPrescriptionDataToExsys(dataSentToExsys);
+
+        prescriptionLog.exsysSaveResult = exsysSaveResponse;
+
+        createConsoleMessage(
+          "success",
+          `Prescription data saved to Exsys for visit_id: ${visit_id}`,
+        );
+      } catch (err) {
+        const exsysErrorBody = err.response?.data;
+
+        createConsoleMessage(
+          "error",
+          `Failed to save prescription to Exsys for visit_id: ${visit_id} — ${err.message}`,
+        );
+
+        if (exsysErrorBody) {
+          createConsoleMessage(
+            "error",
+            `Exsys error body: ${JSON.stringify(exsysErrorBody)}`,
+          );
+        }
+
+        prescriptionLog.exsysSaveError = err.message;
+        prescriptionLog.exsysErrorResponse = exsysErrorBody ?? null;
+      }
+
+      pollLog.prescriptions.push(prescriptionLog);
     }
-
-    pollLog.prescriptions.push(prescriptionLog);
-  }
-
-  if (LOG_IN_RESULT) {
-    pollLog.finishedAt = new Date().toISOString();
-    // console.log("LOGG =>>>>>", JSON.stringify(pollLog))
-    await logResult("prescriptions", pollLog);
+  } catch (err) {
+    createConsoleMessage(
+      "error",
+      `Unexpected error while polling prescriptions — ${err.message}`,
+    );
+    pollLog.unexpectedError = err.message;
+    throw err;
+  } finally {
+    if (LOG_IN_RESULT) {
+      pollLog.finishedAt = new Date().toISOString();
+      await logResult("prescriptions", pollLog);
+    }
   }
 }
 

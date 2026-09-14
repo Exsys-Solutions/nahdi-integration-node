@@ -19,6 +19,7 @@ const PRESCRIPTION_POLL_INTERVAL_MS =
   PRESCRIPTION_POLL_INTERVAL_MIN * 60 * 1000;
 
 const LOG_IN_RESULT = process.env.LOG_RESULT === "Y";
+console.log("LOG_IN_RESULT", LOG_IN_RESULT);
 
 async function pollPrescriptions() {
   createConsoleMessage("info", "Polling for prescriptions...");
@@ -177,6 +178,7 @@ async function pollPrescriptions() {
 
   if (LOG_IN_RESULT) {
     pollLog.finishedAt = new Date().toISOString();
+    // console.log("LOGG =>>>>>", JSON.stringify(pollLog))
     await logResult("prescriptions", pollLog);
   }
 }

@@ -5,8 +5,10 @@
  */
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
+import { fileURLToPath } from "url";
 
-const RESULTS_DIR = path.resolve("results");
+const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const RESULTS_DIR = path.join(PROJECT_ROOT, "results");
 
 export default async function logResult(name, data) {
   await mkdir(RESULTS_DIR, { recursive: true });

@@ -18,7 +18,7 @@ const PRESCRIPTION_POLL_INTERVAL_MIN = +(
 const PRESCRIPTION_POLL_INTERVAL_MS =
   PRESCRIPTION_POLL_INTERVAL_MIN * 60 * 1000;
 
-const LOG_IN_RESULT = false;
+const LOG_IN_RESULT = true;
 
 async function pollPrescriptions() {
   createConsoleMessage("info", "Polling for prescriptions...");
@@ -55,7 +55,17 @@ async function pollPrescriptions() {
     `Found ${prescriptions.length} prescription(s) to process.`,
   );
 
-  for (const { organization_no, visit_id } of prescriptions) {
+  for (const prescription of prescriptions) {
+    if (!prescription || typeof prescription !== "object") {
+      createConsoleMessage(
+        "warning",
+        `Skipping malformed prescription entry: ${JSON.stringify(prescription)}`,
+      );
+      continue;
+    }
+
+    const { organization_no, visit_id } = prescription;
+
     createConsoleMessage(
       "info",
       `Fetching prescription data for visit_id: ${visit_id} | org: ${organization_no}`,

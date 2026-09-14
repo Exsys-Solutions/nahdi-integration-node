@@ -4,10 +4,12 @@
  *
  */
 import "./env.mjs";
+import handleProcessErrors from "./handleProcessErrors.mjs";
 import runPrescriptionPoll from "./pollPrescriptions.mjs";
 import pollSalesInvoices from "./pollSalesInvoices.mjs";
 
 (() => {
+  handleProcessErrors();
   runPrescriptionPoll();
   pollSalesInvoices();
 })();

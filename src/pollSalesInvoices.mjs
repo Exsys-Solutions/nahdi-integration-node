@@ -17,7 +17,7 @@ const SALES_INVOICES_POLL_INTERVAL_MIN = +(
 const SALES_INVOICES_POLL_INTERVAL_MS =
   SALES_INVOICES_POLL_INTERVAL_MIN * 60 * 1000;
 
-const LOG_IN_RESULT = false;
+const LOG_IN_RESULT = true;
 
 async function pollSalesInvoices() {
   createConsoleMessage("info", "Polling for sales invoices...");
@@ -54,13 +54,23 @@ async function pollSalesInvoices() {
     `Found ${invoices.length} invoice(s) to process.`,
   );
 
-  for (const {
-    organization_no,
-    visit_id,
-    PrescriptionID,
-    provider_id,
-    provider_token,
-  } of invoices) {
+  for (const invoiceEntry of invoices) {
+    if (!invoiceEntry || typeof invoiceEntry !== "object") {
+      createConsoleMessage(
+        "warning",
+        `Skipping malformed invoice entry: ${JSON.stringify(invoiceEntry)}`,
+      );
+      continue;
+    }
+
+    const {
+      organization_no,
+      visit_id,
+      PrescriptionID,
+      provider_id,
+      provider_token,
+    } = invoiceEntry;
+
     createConsoleMessage(
       "info",
       `Fetching Nahdi invoice for PrescriptionID: ${PrescriptionID} | org: ${organization_no}`,

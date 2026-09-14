@@ -17,7 +17,7 @@ const SALES_INVOICES_POLL_INTERVAL_MIN = +(
 const SALES_INVOICES_POLL_INTERVAL_MS =
   SALES_INVOICES_POLL_INTERVAL_MIN * 60 * 1000;
 
-const LOG_IN_RESULT = true;
+const LOG_IN_RESULT = process.env.LOG_RESULT === "Y";
 
 async function pollSalesInvoices() {
   createConsoleMessage("info", "Polling for sales invoices...");

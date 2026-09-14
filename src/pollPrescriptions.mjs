@@ -18,7 +18,7 @@ const PRESCRIPTION_POLL_INTERVAL_MIN = +(
 const PRESCRIPTION_POLL_INTERVAL_MS =
   PRESCRIPTION_POLL_INTERVAL_MIN * 60 * 1000;
 
-const LOG_IN_RESULT = true;
+const LOG_IN_RESULT = process.env.LOG_RESULT === "Y";
 
 async function pollPrescriptions() {
   createConsoleMessage("info", "Polling for prescriptions...");

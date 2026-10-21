@@ -57,3 +57,14 @@ export async function postSalesInvoiceDataToExsys(payload) {
 
   return data;
 }
+
+export async function getNahdiProviders() {
+  const data = await exsysGet("/initiate_nahdi");
+  return data?.data ?? [];
+}
+
+export async function postItemsSohToExsys(payload) {
+  const { data } = await exsysApiClient.post("/items_dml", payload);
+
+  return data;
+}

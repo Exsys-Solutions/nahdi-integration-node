@@ -38,3 +38,11 @@ export async function getSalesInvoices({
   });
   return data ?? null;
 }
+
+export async function getItemsSoh({ provider_id, provider_token }) {
+  const { data } = await nahdiApiClient.post("/get_Req_item_soh", {
+    Provider_ID: provider_id,
+    Provider_Token: provider_token,
+  });
+  return data ?? null;
+}

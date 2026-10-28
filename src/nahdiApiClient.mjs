@@ -7,7 +7,7 @@ import axios from "axios";
 
 const NAHDI_BASE_URL = "https://m2.nahdi.sa/ProvidersIntegration/Home";
 
-const nahdiApiClient = axios.create({ baseURL: NAHDI_BASE_URL });
+const nahdiApiClient = axios.create({ baseURL: NAHDI_BASE_URL, timeout: 30000 });
 
 export async function sendPrescription(payload) {
   const { data } = await nahdiApiClient.post(

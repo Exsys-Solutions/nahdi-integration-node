@@ -22,6 +22,7 @@ const EXSYS_BASE_URL = `${exsysBaseDB}/ex_nahdi_integration`;
 const exsysApiClient = axios.create({
   baseURL: EXSYS_BASE_URL,
   params: { authorization: AUTHORIZATION },
+  timeout: 30000,
 });
 
 async function exsysGet(endpoint, params = {}) {

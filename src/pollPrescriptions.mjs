@@ -80,11 +80,10 @@ async function pollPrescriptions() {
       let prescriptionData = null;
 
       try {
-        prescriptionData = await getPrescriptionData(
-          organization_no,
-          visit_id,
-        );
+        prescriptionData = await getPrescriptionData(organization_no, visit_id);
       } catch (err) {
+        console.log("err =>>", err);
+
         createConsoleMessage(
           "error",
           `Failed to get prescription data for visit_id: ${visit_id} — ${err.message}`,
@@ -95,7 +94,6 @@ async function pollPrescriptions() {
       }
 
       prescriptionLog.prescriptionData = prescriptionData || null;
-
       if (!prescriptionData) {
         createConsoleMessage(
           "warning",
@@ -112,6 +110,8 @@ async function pollPrescriptions() {
 
       try {
         nahdiResult = await sendPrescription(prescriptionData);
+        console.log("nahdiResult =>>", nahdiResult);
+
         createConsoleMessage(
           "success",
           `Prescription sent for visit_id: ${visit_id}`,
@@ -127,6 +127,8 @@ async function pollPrescriptions() {
           );
         }
       } catch (err) {
+        console.log("err =>>", err);
+
         createConsoleMessage(
           "error",
           `Failed to send prescription for visit_id: ${visit_id} — ${err.message}`,

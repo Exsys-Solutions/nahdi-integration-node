@@ -8,7 +8,7 @@
   "author": "AhmedNassar147 <nassarahmed750@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "start": "nodemon --ignore results/ -q ./src/index.mjs"
+    "start": "nodemon --ignore results/ --ignore config.json -q ./src/index.mjs"
   },
   "dependencies": {
     "axios": "^1.4.0",

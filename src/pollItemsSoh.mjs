@@ -133,13 +133,22 @@ async function pollItemsSoh() {
   }
 }
 
+async function loop() {
+  try {
+    await pollItemsSoh();
+  } catch {
+    // already logged inside pollItemsSoh; keep the loop alive
+  } finally {
+    setTimeout(loop, ITEMS_SOH_POLL_INTERVAL_MS);
+  }
+}
+
 function runItemsSohPoll() {
   createConsoleMessage(
     "info",
     `Items SOH poller started — interval: ${ITEMS_SOH_POLL_INTERVAL_MS / 1000}s`,
   );
-  pollItemsSoh();
-  setInterval(pollItemsSoh, ITEMS_SOH_POLL_INTERVAL_MS);
+  loop();
 }
 
 export default runItemsSohPoll;

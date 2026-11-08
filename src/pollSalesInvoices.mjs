@@ -182,13 +182,22 @@ async function pollSalesInvoices() {
   }
 }
 
+async function loop() {
+  try {
+    await pollSalesInvoices();
+  } catch {
+    // already logged inside pollSalesInvoices; keep the loop alive
+  } finally {
+    setTimeout(loop, SALES_INVOICES_POLL_INTERVAL_MS);
+  }
+}
+
 function runSalesInvoicesPoll() {
   createConsoleMessage(
     "info",
     `Sales invoices poller started — interval: ${SALES_INVOICES_POLL_INTERVAL_MS / 1000}s`,
   );
-  pollSalesInvoices();
-  setInterval(pollSalesInvoices, SALES_INVOICES_POLL_INTERVAL_MS);
+  loop();
 }
 
 export default runSalesInvoicesPoll;

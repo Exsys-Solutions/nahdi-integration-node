@@ -185,13 +185,22 @@ async function pollPrescriptions() {
   }
 }
 
+async function loop() {
+  try {
+    await pollPrescriptions();
+  } catch {
+    // already logged inside pollPrescriptions; keep the loop alive
+  } finally {
+    setTimeout(loop, PRESCRIPTION_POLL_INTERVAL_MS);
+  }
+}
+
 function runPrescriptionPoll() {
   createConsoleMessage(
     "info",
     `Prescription poller started — interval: ${PRESCRIPTION_POLL_INTERVAL_MS / 1000}s`,
   );
-  pollPrescriptions();
-  setInterval(pollPrescriptions, PRESCRIPTION_POLL_INTERVAL_MS);
+  loop();
 }
 
 export default runPrescriptionPoll;
